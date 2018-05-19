@@ -12,6 +12,7 @@ import math
 #plt.yticks(size = 10)
 #plt.rcParams.update({'font.size': 6})
 plt.rcParams.update({'figure.figsize': (7.2, 3)})
+plt.rcParams.update({'savefig.dpi': 400})
 
 def convert(filepath, byte_per_str):
     """
@@ -26,7 +27,7 @@ def convert(filepath, byte_per_str):
             st = f.read(byte_per_str)
         return sorted([s[key] for key in s])
 
-def draw_basic_info(freqs):
+def draw_basic_info(freqs, x, y):
     """
     take a list of frequencies
     and draw {tot, min, max, unique, ave} on the graph
@@ -42,7 +43,7 @@ def draw_basic_info(freqs):
     ave = tot / uniq
 
     # drawing
-    plt.text(.54, .65, 
+    plt.text(x, y, 
         'Min:         %d\nMax:        %d\nUnique:    %d\nTotal:       %d\nAverage:  %.2f' % (min_freq, max_freq, uniq, tot, ave),
         transform=plt.gca().transAxes,
         backgroundcolor='white',
@@ -53,7 +54,7 @@ def draw_basic_info(freqs):
 def draw_histogram(freqs, bins_num, x_max, y_max):
     plt.hist(
         freqs, 
-        bins=np.logspace(0, 6, bins_num),
+        bins=np.logspace(0, math.ceil(math.log(freqs[-1], 10)), bins_num),
         color='#333333',
         edgecolor='white',
         linewidth=.1
@@ -65,7 +66,7 @@ def draw_histogram(freqs, bins_num, x_max, y_max):
     plt.grid(True, which='major', color="white", linewidth=1.5)
     plt.grid(True, which='minor', color="white", linewidth=.3)
     plt.xlim([1, x_max])
-    plt.ylim(ymax=y_max)
+    plt.ylim([0.6, y_max])
 
 def draw_scatter(freqs, x_max, ylim, label):
     tot = 0
@@ -80,6 +81,7 @@ def draw_scatter(freqs, x_max, ylim, label):
         linestyle='None',
         ms=4,
         label=label,
+        rasterized=True,
     )
 
     plt.gca().set_xlim((1, x_max))
@@ -117,20 +119,63 @@ def draw_similar_zipf_lines(freqs, props):
     k, b = optimize.curve_fit(linear, xlog[n2:], ylog[n2:])[0]
     draw_straight_line(k, b, 1, len(freqs), 'm')
 
+def generate_real_dataset_figure(filepath, output_filepath,params):
+    freqs = convert(filepath, params['byte_per_str'])
+    plt.figure()
+    plt.subplot(121)
+    draw_histogram(freqs, params['bins_num'], params['x_hist_max'], params['y_hist_max'])
+    plt.gca().set_xlabel('Frequency')
+    plt.gca().set_ylabel('Number of items')
+    draw_basic_info(freqs, params['basic_info_x'], params['basic_info_y'])
+    plt.title('(1)')
+    plt.subplot(122)
+    draw_scatter(freqs, params['x_scatter_max'], params['y_scatter_lim'], params['label'])
+    draw_similar_zipf_lines(freqs, params['head_middle_tail'])
+    plt.gca().set_xlabel('Rank')
+    plt.gca().set_ylabel('Probability mass function')
+    plt.gca().legend(loc='upper right', fontsize='small')
+    plt.title('(2)')
+    plt.tight_layout()
+    plt.savefig(output_filepath)
 
-freqs = convert('dataset/kosarak.dat', 4)
-plt.subplot(121)
-draw_histogram(freqs, 30, 10**6, 5*(10**4))
-plt.gca().set_xlabel('Frequency')
-plt.gca().set_ylabel('Number of items')
-draw_basic_info(freqs)
-plt.title('(1)')
-plt.subplot(122)
-draw_scatter(freqs, 10**5, (10**-7, 10**-1), 'kosarak')
-draw_similar_zipf_lines(freqs, [.001, .01])
-plt.gca().set_xlabel('Rank')
-plt.gca().set_ylabel('Probability mass function')
-plt.gca().legend(loc='upper right', fontsize='small')
-plt.title('(2)')
-plt.tight_layout()
-plt.savefig('results/kosarak.pdf')
+params = [
+    {
+        'byte_per_str': 4,
+        'bins_num': 35,
+        'x_hist_max': 10**6,
+        'y_hist_max': 5*(10**4),
+        'x_scatter_max': 10**5,
+        'y_scatter_lim': (10**-7, 10**-1),
+        'label': 'kosarak',
+        'head_middle_tail': [.001, .01],
+        'basic_info_x': 0.52,
+        'basic_info_y': 0.64,
+    },
+    {
+        'byte_per_str': 4,
+        'bins_num': 35,
+        'x_hist_max': 10**6,
+        'y_hist_max': 10**6,
+        'x_scatter_max': 10**6,
+        'y_scatter_lim': (10**-7, 10**-1),
+        'label': 'caida',
+        'head_middle_tail': [.0001, .0017],
+        'basic_info_x': 0.52,
+        'basic_info_y': 0.64,
+    },
+    {
+        'byte_per_str': 4,
+        'bins_num': 35,
+        'x_hist_max': 5*(10**7),
+        'y_hist_max': 10**6,
+        'x_scatter_max': 10**6,
+        'y_scatter_lim': (10**-8, 10**0),
+        'label': 'webdocs',
+        'head_middle_tail': [10**-5, 0.001],
+        'basic_info_x': 0.52,
+        'basic_info_y': 0.64,
+    },
+]
+#generate_real_dataset_figure('dataset/kosarak.dat', 'results/kosarak.pdf', params[0])
+#generate_real_dataset_figure('dataset/formatted00.dat', 'results/caida.pdf', params[1])
+generate_real_dataset_figure('dataset/webdocs00.dat', 'results/webdocs.pdf', params[2])
