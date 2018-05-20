@@ -1,7 +1,11 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import LinearLocator
 import numpy as np
 from scipy import optimize
 import math
+import pickle
+import os.path
+import base64
 
 # use LaTeX font
 #plt.rc('text', usetex=True)
@@ -14,23 +18,33 @@ import math
 plt.rcParams.update({'figure.figsize': (7.2, 3)})
 plt.rcParams.update({'savefig.dpi': 400})
 
-def convert(filepath, byte_per_str):
+def convert(filepath, byte_per_str, refresh=False):
     """
     read binary file from filepath
     and convert to a list of frequencies
     """
-    with open(filepath, 'rb') as f:
-        s = dict()
-        st = f.read(byte_per_str)
-        while st:
-            s[st] = s.get(st, 0) + 1
+    def path2base64(s):
+        return base64.b64encode(s.encode('utf-8')).decode('ascii')
+    
+    encoded_path = 'filecache/' + path2base64(filepath) + '.pickle'
+    if os.path.isfile(encoded_path) and not refresh:
+        with open(encoded_path, 'rb') as f:
+            return pickle.load(f)
+    else:
+        with open(filepath, 'rb') as f:
+            s = dict()
             st = f.read(byte_per_str)
-        return sorted([s[key] for key in s])
+            while st:
+                s[st] = s.get(st, 0) + 1
+                st = f.read(byte_per_str)
+            freqs = sorted([s[key] for key in s])
+            with open(encoded_path, 'wb') as f:
+                pickle.dump(freqs, f)
+            return freqs
 
-def draw_basic_info(freqs, x, y):
+def basic_info(freqs):
     """
-    take a list of frequencies
-    and draw {tot, min, max, unique, ave} on the graph
+    return {tot, min, max, unique, ave} for given frequency
     """
     tot = 0
     max_freq = 0
@@ -41,6 +55,14 @@ def draw_basic_info(freqs, x, y):
         max_freq = max(max_freq, f)
         min_freq = min(min_freq, f)
     ave = tot / uniq
+    return (tot, max_freq, min_freq, uniq, ave)
+
+def draw_basic_info(freqs, x, y):
+    """
+    take a list of frequencies
+    and draw {tot, min, max, unique, ave} on the graph
+    """
+    tot, max_freq, min_freq, uniq, ave = basic_info(freqs)
 
     # drawing
     plt.text(x, y, 
@@ -119,7 +141,70 @@ def draw_similar_zipf_lines(freqs, props):
     k, b = optimize.curve_fit(linear, xlog[n2:], ylog[n2:])[0]
     draw_straight_line(k, b, 1, len(freqs), 'm')
 
-def generate_real_dataset_figure(filepath, output_filepath,params):
+def distinct_max_info(filepaths, byte_per_str):
+    """
+    return distinct num and max num 
+    for each file in filepaths
+    """
+    
+    distincts, maxs = [], []
+    for p in filepaths:
+        freqs = convert(p, byte_per_str)
+        tot, max_freq, min_freq, uniq, ave = basic_info(freqs)
+        distincts.append(uniq)
+        maxs.append(max_freq)
+    return distincts, maxs
+        
+        
+
+def draw_uniq_max_line(distincts, maxs, x, pos):
+    """
+    draw two lines
+    max freq line
+    and unique item line
+    """
+    plt.scatter(distincts, maxs)
+    plt.gca().set_ylim(0)
+    l = len(maxs)
+    for i in range(l):
+        plt.gca().annotate(x[i],
+            xy=(distincts[i] + 0.01, maxs[i] + 0.01), xycoords='data',
+            xytext=pos[i], textcoords=plt.gca().transAxes,
+            arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+            fontsize='small'
+        )
+    '''
+    plt.plot(
+        x, distincts,
+        marker='D',
+    )
+    ax = plt.gca()
+    ax.set_xlim((x[0], x[-1]))
+    ax.xaxis.set_major_locator(LinearLocator(math.ceil(len(x) / 2)))  
+    ax2 = ax.twinx()
+    plt.plot(
+        x, maxs,
+        marker='o'
+    )
+    '''
+
+def generate_synthetic_dataset_figure(filepaths, output_filepath, params):
+    distincts, maxs = distinct_max_info(filepaths, params['byte_per_str'])
+    plt.figure()
+    plt.subplot(121)
+    draw_uniq_max_line(
+        [d / params['info_y_unit_uniq'] for d in distincts], 
+        [m / params['info_y_unit_max'] for m in maxs], 
+        params['info_x'],
+        params['annotation_pos'],
+    )
+    plt.xlabel('Number of distinct items (10^%d)' % round(math.log(params['info_y_unit_uniq'], 10)))
+    plt.ylabel('Maximum frequency (10^%d)' % round(math.log(params['info_y_unit_max'], 10)))
+    plt.title('(1)')
+    plt.tight_layout()
+    plt.savefig(output_filepath)
+
+def generate_real_dataset_figure(filepath, output_filepath, params):
     freqs = convert(filepath, params['byte_per_str'])
     plt.figure()
     plt.subplot(121)
@@ -175,7 +260,23 @@ params = [
         'basic_info_x': 0.52,
         'basic_info_y': 0.64,
     },
+    # for synthetic
+    {
+        'byte_per_str': 4,
+        'info_x': [.0, .3, .6, .9, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0],
+        'info_y_unit_uniq': 100000,
+        'info_y_unit_max': 10**7,
+        'annotation_pos': [
+            (0.93, 0.1), (0.8, 0.01), (0.85, 0.2), 
+            (0.7, 0.1), (0.75, 0.33), (0.6, 0.2), 
+            (0.63, 0.5), (0.38, 0.46), (0.38, 0.73), 
+            (0.1, 0.7), (0.13, 0.94)
+        ],
+    }
 ]
+
 #generate_real_dataset_figure('dataset/kosarak.dat', 'results/kosarak.pdf', params[0])
 #generate_real_dataset_figure('dataset/formatted00.dat', 'results/caida.pdf', params[1])
-generate_real_dataset_figure('dataset/webdocs00.dat', 'results/webdocs.pdf', params[2])
+#generate_real_dataset_figure('dataset/webdocs00.dat', 'results/webdocs.pdf', params[2])
+
+generate_synthetic_dataset_figure(['dataset/zipf/' + p for p in sorted(os.listdir('dataset/zipf'))], 'results/synthetic.pdf', params[3])
