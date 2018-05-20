@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LinearLocator
+from matplotlib.ticker import LinearLocator, LogLocator, NullFormatter
 import numpy as np
 from scipy import optimize
 import math
@@ -15,7 +15,7 @@ import base64
 #plt.xticks(size = 10)
 #plt.yticks(size = 10)
 #plt.rcParams.update({'font.size': 6})
-plt.rcParams.update({'figure.figsize': (7.2, 3)})
+plt.rcParams.update({'figure.figsize': (8, 4)})
 plt.rcParams.update({'savefig.dpi': 400})
 
 def convert(filepath, byte_per_str, refresh=False):
@@ -73,7 +73,7 @@ def draw_basic_info(freqs, x, y):
         fontsize='small'
     )
 
-def draw_histogram(freqs, bins_num, x_max, y_max):
+def draw_histogram(freqs, bins_num, x_max, y_max, log_numticks):
     plt.hist(
         freqs, 
         bins=np.logspace(0, math.ceil(math.log(freqs[-1], 10)), bins_num),
@@ -89,6 +89,7 @@ def draw_histogram(freqs, bins_num, x_max, y_max):
     plt.grid(True, which='minor', color="white", linewidth=.3)
     plt.xlim([1, x_max])
     plt.ylim([0.6, y_max])
+    format_log_axis(plt.gca().xaxis, log_numticks)
 
 def draw_scatter(freqs, x_max, ylim, label):
     tot = 0
@@ -140,6 +141,7 @@ def draw_similar_zipf_lines(freqs, props):
     draw_straight_line(k, b, 1, len(freqs), 'green')
     k, b = optimize.curve_fit(linear, xlog[n2:], ylog[n2:])[0]
     draw_straight_line(k, b, 1, len(freqs), 'm')
+    plt.gca().legend(loc='upper right', fontsize='small')
 
 def distinct_max_info(filepaths, byte_per_str):
     """
@@ -150,43 +152,65 @@ def distinct_max_info(filepaths, byte_per_str):
     distincts, maxs = [], []
     for p in filepaths:
         freqs = convert(p, byte_per_str)
-        tot, max_freq, min_freq, uniq, ave = basic_info(freqs)
+        _, max_freq, _, uniq, _ = basic_info(freqs)
         distincts.append(uniq)
         maxs.append(max_freq)
     return distincts, maxs
         
         
 
-def draw_uniq_max_line(distincts, maxs, x, pos):
+def draw_uniq_max_line(distincts, maxs, x):
     """
     draw two lines
     max freq line
     and unique item line
     """
-    plt.scatter(distincts, maxs)
-    plt.gca().set_ylim(0)
+    # plt.scatter(distincts, maxs)
     l = len(maxs)
     for i in range(l):
-        plt.gca().annotate(x[i],
-            xy=(distincts[i] + 0.01, maxs[i] + 0.01), xycoords='data',
-            xytext=pos[i], textcoords=plt.gca().transAxes,
-            arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
-            fontsize='small'
+        plt.scatter(distincts[i], maxs[i], 
+            label=x[i],
+            edgecolors='none'
         )
-    '''
-    plt.plot(
-        x, distincts,
-        marker='D',
+        # plt.gca().annotate(x[i],
+        #     xy=(distincts[i] + 0.01, maxs[i] + 0.01), xycoords='data',
+        #     xytext=pos[i], textcoords=plt.gca().transAxes,
+        #     arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+        #     fontsize='small'
+        # )
+    plt.gca().set_ylim(0)
+    plt.legend(loc='upper right', fontsize='small')
+
+def draw_zipf_scatter(freqs, xmax, ymin, log_ticknum, skewness):
+    for i in range(len(freqs)):
+        x = list(range(len(freqs[i]), 0, -1))
+        tot = 0
+        for f in freqs[i]:
+            tot += f
+        plt.plot(x, [f/tot for f in freqs[i]], 
+            linewidth=1,
+            label="%.1f" % skewness[i]
+        )
+
+    plt.gca().set_xlim((1, xmax))
+    plt.gca().set_ylim((ymin, 1))
+    plt.gca().set_xscale('log')
+    plt.gca().set_yscale('log')
+    format_log_axis(plt.gca().xaxis, log_ticknum)
+    plt.gca().legend(loc='upper right', fontsize='small')
+
+def format_log_axis(ax, num_ticks):
+    """
+    change ax tick to 1, 10, 100, 1000, ...
+    add proper minor ticks
+    """
+    ax.set_major_locator(LogLocator(base=10, numticks=num_ticks))
+    ax.set_minor_locator(LogLocator(
+        base=10, 
+        subs=(0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9),
+        numticks=num_ticks), 
     )
-    ax = plt.gca()
-    ax.set_xlim((x[0], x[-1]))
-    ax.xaxis.set_major_locator(LinearLocator(math.ceil(len(x) / 2)))  
-    ax2 = ax.twinx()
-    plt.plot(
-        x, maxs,
-        marker='o'
-    )
-    '''
+    ax.set_minor_formatter(NullFormatter())
 
 def generate_synthetic_dataset_figure(filepaths, output_filepath, params):
     distincts, maxs = distinct_max_info(filepaths, params['byte_per_str'])
@@ -196,11 +220,17 @@ def generate_synthetic_dataset_figure(filepaths, output_filepath, params):
         [d / params['info_y_unit_uniq'] for d in distincts], 
         [m / params['info_y_unit_max'] for m in maxs], 
         params['info_x'],
-        params['annotation_pos'],
+        #params['annotation_pos'],
     )
     plt.xlabel('Number of distinct items (10^%d)' % round(math.log(params['info_y_unit_uniq'], 10)))
     plt.ylabel('Maximum frequency (10^%d)' % round(math.log(params['info_y_unit_max'], 10)))
     plt.title('(1)')
+    plt.subplot(122)
+    freqs = [convert(filepath, params['byte_per_str']) for filepath in filepaths]
+    draw_zipf_scatter(freqs, params['scatter_xmax'], params['scatter_ymin'], params['log_ticknum'], params['info_x'])
+    plt.gca().set_xlabel('Rank')
+    plt.gca().set_ylabel('Probability mass function')
+    plt.title('(2)')
     plt.tight_layout()
     plt.savefig(output_filepath)
 
@@ -208,7 +238,7 @@ def generate_real_dataset_figure(filepath, output_filepath, params):
     freqs = convert(filepath, params['byte_per_str'])
     plt.figure()
     plt.subplot(121)
-    draw_histogram(freqs, params['bins_num'], params['x_hist_max'], params['y_hist_max'])
+    draw_histogram(freqs, params['bins_num'], params['x_hist_max'], params['y_hist_max'], params['hist_log_numticks'])
     plt.gca().set_xlabel('Frequency')
     plt.gca().set_ylabel('Number of items')
     draw_basic_info(freqs, params['basic_info_x'], params['basic_info_y'])
@@ -218,7 +248,7 @@ def generate_real_dataset_figure(filepath, output_filepath, params):
     draw_similar_zipf_lines(freqs, params['head_middle_tail'])
     plt.gca().set_xlabel('Rank')
     plt.gca().set_ylabel('Probability mass function')
-    plt.gca().legend(loc='upper right', fontsize='small')
+    # plt.gca().legend(loc='upper right', fontsize='small')
     plt.title('(2)')
     plt.tight_layout()
     plt.savefig(output_filepath)
@@ -229,36 +259,39 @@ params = [
         'bins_num': 35,
         'x_hist_max': 10**6,
         'y_hist_max': 5*(10**4),
+        'hist_log_numticks': 7,
         'x_scatter_max': 10**5,
         'y_scatter_lim': (10**-7, 10**-1),
         'label': 'kosarak',
         'head_middle_tail': [.001, .01],
-        'basic_info_x': 0.52,
-        'basic_info_y': 0.64,
+        'basic_info_x': 0.55,
+        'basic_info_y': 0.75,
     },
     {
         'byte_per_str': 4,
         'bins_num': 35,
         'x_hist_max': 10**6,
         'y_hist_max': 10**6,
+        'hist_log_numticks': 7,
         'x_scatter_max': 10**6,
         'y_scatter_lim': (10**-7, 10**-1),
         'label': 'caida',
         'head_middle_tail': [.0001, .0017],
-        'basic_info_x': 0.52,
-        'basic_info_y': 0.64,
+        'basic_info_x': 0.55,
+        'basic_info_y': 0.75,
     },
     {
         'byte_per_str': 4,
         'bins_num': 35,
         'x_hist_max': 5*(10**7),
         'y_hist_max': 10**6,
+        'hist_log_numticks': 8,
         'x_scatter_max': 10**6,
         'y_scatter_lim': (10**-8, 10**0),
         'label': 'webdocs',
         'head_middle_tail': [10**-5, 0.001],
-        'basic_info_x': 0.52,
-        'basic_info_y': 0.64,
+        'basic_info_x': 0.55,
+        'basic_info_y': 0.75,
     },
     # for synthetic
     {
@@ -266,12 +299,9 @@ params = [
         'info_x': [.0, .3, .6, .9, 1.2, 1.5, 1.8, 2.1, 2.4, 2.7, 3.0],
         'info_y_unit_uniq': 100000,
         'info_y_unit_max': 10**7,
-        'annotation_pos': [
-            (0.93, 0.1), (0.8, 0.01), (0.85, 0.2), 
-            (0.7, 0.1), (0.75, 0.33), (0.6, 0.2), 
-            (0.63, 0.5), (0.38, 0.46), (0.38, 0.73), 
-            (0.1, 0.7), (0.13, 0.94)
-        ],
+        'scatter_xmax': 2*(10**6),
+        'scatter_ymin': 10**-8,
+        'log_ticknum': 7,
     }
 ]
 
