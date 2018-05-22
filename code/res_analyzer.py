@@ -1,7 +1,7 @@
 import pickle
 import functools
 
-def freq(inpath, outpath):
+def freq(inpath):
     def basic(raw):
         ae = [abs(i[0] - i[1]) for i in raw]
         re = [abs(i[0] - i[1])/i[0] for i in raw]
@@ -22,15 +22,21 @@ def freq(inpath, outpath):
         for line in f:
             raw.append([int(i) for i in line.split()])
         res = basic(raw)
-        pickle.dump(res, open(outpath, 'wb'))
+        return res
 
-def path(task, dat, sk, k, l, w):
+def save(outpath, res):
+    pickle.dump(res, open(outpath, 'wb'))
+
+def path(task, dat, sk, k, l, w = 24):
     r = '/'.join([task, dat, sk, str(k)]) + '_' + str(l) + '_' + str(w)
     return (
         '../sketchbench-experiment/result/' + r + '.txt', 
         'result/analyze/' + r + '.pickle'
     )
 
-inpath, outpath = path("freq", "webdocs", "a", 4, 65536, 16)
+for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
+    for k in range(3, 10):
+        for mem in range(1<<22, 1<<25, 1<<22):
+            inpath, outpath = path("freq", "webdocs", sk, k, mem)
+            save(outpath, freq(inpath))
 
-freq(inpath, outpath)
