@@ -1,5 +1,6 @@
 import pickle
 import functools
+import sys
 
 def freq(inpath):
     def basic(raw):
@@ -34,9 +35,10 @@ def path(task, dat, sk, k, l, w = 24):
         'result/analyze/' + r + '.pickle'
     )
 
-for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
-    for k in range(3, 10):
-        for mem in range(1<<22, 1<<25, 1<<22):
-            inpath, outpath = path("freq", "webdocs", sk, k, mem)
-            save(outpath, freq(inpath))
+sk = sys.argv[1]
+#for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
+for k in range(3, 10):
+    for mem in range(1<<22, 1<<25, 1<<22):
+        inpath, outpath = path("freq", "webdocs", sk, k, mem)
+        save(outpath, freq(inpath))
 
