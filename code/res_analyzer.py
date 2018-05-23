@@ -28,19 +28,19 @@ def freq(inpath):
 def save(outpath, res):
     pickle.dump(res, open(outpath, 'wb'))
 
-def path(task, dat, sk, k, l, w = 24):
-    r = '/'.join([task, dat, sk, str(k)]) + '_' + str(l) + '_' + str(w)
+def path(task, dat, sk, k, mem, w = 24):
+    r = '/'.join([task, dat, sk, str(k)]) + '_' + str(mem) + '_' + str(w)
     return (
         '../sketchbench-experiment/result/' + r + '.txt', 
         'result/analyze/' + r + '.pickle'
     )
 
-sk = sys.argv[1]
-task = sys.argv[2]
-dat = sys.argv[3]
-#for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
-for k in range(3, 10):
-    for mem in range(1<<22, 1<<25, 1<<22):
-        inpath, outpath = path(task, dat, sk, k, mem)
-        save(outpath, freq(inpath))
+#sk = sys.argv[1]
+task = sys.argv[1]
+dat = sys.argv[2]
+for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
+    for k in range(2, 10):
+        for mem in range(1<<22, (1<<25)+1, 1<<22):
+            inpath, outpath = path(task, dat, sk, k, mem)
+            save(outpath, freq(inpath))
 
