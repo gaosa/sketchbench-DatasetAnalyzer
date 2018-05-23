@@ -35,12 +35,12 @@ def path(task, dat, sk, k, mem, w = 24):
         'result/analyze/' + r + '.pickle'
     )
 
-#sk = sys.argv[1]
-task = sys.argv[1]
-dat = sys.argv[2]
-for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
-    for k in range(2, 10):
-        for mem in range(1<<22, (1<<25)+1, 1<<22):
-            inpath, outpath = path(task, dat, sk, k, mem)
-            save(outpath, freq(inpath))
+sk = sys.argv[1]
+task = sys.argv[2]
+dat = sys.argv[3]
+#for sk in ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']:
+for k in range(2, 10):
+    for mem in range(1<<22, (1<<25)+1, 1<<22):
+        inpath, outpath = path(task, dat, sk, k, mem)
+        save(outpath, freq(inpath))
 
