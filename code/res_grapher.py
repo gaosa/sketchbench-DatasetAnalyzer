@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LinearLocator, LogLocator
+from matplotlib.ticker import LinearLocator, LogLocator, NullFormatter
 import pickle
 
 plt.rcParams.update({'figure.figsize': (8, 4)})
@@ -311,7 +311,15 @@ def draw_freq_zipf():
         'xlabel': 'Skewness of datasets',
         'ylabel': 'Average absolute error',
         'markers': markers,
+        'ymin': 0,
+        'ymax': 40,
+        'xmin': 0,
+        'xmax': 3,
+        'x_numticks': 6,
+        'grid': 2,
     })
+    plt.gca().xaxis.set_minor_locator(LinearLocator(11))
+    plt.gca().yaxis.set_minor_locator(LinearLocator(17))
     dat = pickle.load(open('result/analyze_result/zipf_are.pickle', 'rb'))
     ys = [dat[sk] for sk in sks]
     plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
@@ -322,7 +330,15 @@ def draw_freq_zipf():
         'xlabel': 'Skewness of datasets',
         'ylabel': 'Average relative error',
         'markers': markers,
+        'ymin': 0,
+        'ymax': 5,
+        'xmin': 0,
+        'xmax': 3,
+        'x_numticks': 6,
+        'grid': 2,
     })
+    plt.gca().xaxis.set_minor_locator(LinearLocator(11))
+    plt.gca().yaxis.set_minor_locator(LinearLocator(26))
     plt.subplots_adjust(
         top=.92, 
         left=.08, 
@@ -330,7 +346,8 @@ def draw_freq_zipf():
         bottom=0.12,
         wspace=.6,
     )
-    plt.show()
+    plt.savefig('result/freq_skew.pdf')
+    #plt.show()
 
 #draw_freq_various_mem('caida')
 #draw_freq_various_k('caida')
