@@ -35,16 +35,16 @@ def real_are(raw):
             d[p[0]].append(p[1])
         else:
             d[p[0]] = [p[1]]
-    reals, ares = [], []
+    reals_ares = []
     for key in d:
-        reals.append(key)
         t = 0
         for i in d[key]:
             t += i
-        ares.append(t/len(d[key]))
+        reals_ares.append([key, t/len(d[key])])
+    reals_ares.sort()
     return {
-        "real": reals,
-        "are": ares,
+        "real": [i[0] for i in reals_ares],
+        "are": [i[1] for i in reals_ares],
     }
 
 

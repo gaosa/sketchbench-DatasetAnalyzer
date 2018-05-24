@@ -15,13 +15,24 @@ mems = list(range(1<<22,(1<<25)+1, 1<<22))
 default_k = 3
 default_mem = (1<<24)
 
+def draw(xs, ys, params):
+    if not isinstance(xs[0], list):
+        xs = [xs for y in ys]
 
-def draw(x, ys, params):
+    if 'y_smallest' in params:
+        for y in ys:
+            for i in range(len(y)):
+                y[i] = max(y[i], params['y_smallest'])
+    
     for i in range(len(ys)):
-        plt.plot(x, ys[i], 
+        plt.plot(xs[i], ys[i], 
             label=params['labels'][i],
             marker=params.get('markers', ['' for j in ys])[i],
             alpha=params.get('alpha', 1),
+            zorder=params.get('zorder_'+params['labels'][i], 2),
+            linestyle=params.get('linestyle', '-'),
+            rasterized=True,
+            markersize=params.get('markersize', plt.rcParamsDefault['lines.markersize'])
         )
     if params.get('y_scale', 'linear') is 'log':
         y_locator = LogLocator(base=params.get('y_log_base', 10))
@@ -177,6 +188,7 @@ def draw_freq_various_mem(dat):
         right=.98,
         wspace=.6,
     )
+    #plt.show()
     plt.savefig('result/freq_mem.pdf')
 
 def draw_freq_cdf(dat):
@@ -230,9 +242,65 @@ def draw_freq_cdf(dat):
     )
     plt.savefig('result/freq_cdf.pdf')
 
+def draw_freq_real_are():
+    dat = pickle.load(open('tmpfiles/real_are.pickle', 'rb'))
+    xs, ys = [], []
+    for sk in sks:
+        xs.append(dat[sk][0])
+        ys.append(dat[sk][1])
+    plt.figure()
+    plt.subplot(121)
+    draw(xs, ys, {
+        'labels': sks,
+        'x_scale': 'log',
+        'ymin': 0,
+        'ymax': 8,
+        'xmin': 1,
+        'xmax': 10**4,
+        'xlabel': 'True frenquency of elements',
+        'ylabel': 'Average relative error',
+        'grid': 1,
+        'zorder_csm': 0,
+        #'linestyle': '-',
+        'markers': markers,
+        'markersize': 4.0,
+    })
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.subplot(122)
+    draw(xs, ys, {
+        'labels': sks,
+        'x_scale': 'log',
+        'y_scale': 'log',
+        'ymin': 10**-6,
+        'ymax': 10,
+        'xmin': 1,
+        #'xmax': 10**4,
+        'xlabel': 'True frenquency of elements',
+        'ylabel': 'Average relative error',
+        'grid': 2,
+        'x_numticks': 7,
+        #'alpha': 0.6,
+        'zorder_csm': 0,
+        #'zorder_lcu': 50,
+        'y_smallest': 10**-6,
+        'linestyle': 'None',
+        'markers': markers,
+        'markersize': 4.0,
+        #'alpha': 0.3,
+    })
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        wspace=.6,
+    )
+    plt.savefig('result/real_are.pdf')
+
 #draw_freq_various_mem('caida')
 #draw_freq_various_k('caida')
 #draw_freq_cdf('caida')
+draw_freq_real_are()
 # f = open(genpath('freq', 'kosarak', 'a', 4, 1<<22), 'rb')
 # print(pickle.load(f))
 # f.close()
