@@ -53,8 +53,8 @@ def thru(raw):
     que_ns = raw[2][0]
     que_num = raw[3][0]
     return {
-        "ins_thru": 1000*ins_ns/ins_num,
-        "que_thru": 1000*que_ns/que_num
+        "ins_thru": 1000*ins_num/ins_ns,
+        "que_thru": 1000*que_num/que_ns
     }
 
 metric = sys.argv[1]
