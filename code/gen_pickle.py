@@ -47,6 +47,15 @@ def real_are(raw):
         "are": [i[1] for i in reals_ares],
     }
 
+def thru(raw):
+    ins_ns = raw[0][0]
+    ins_num = raw[1][0]
+    que_ns = raw[2][0]
+    que_num = raw[3][0]
+    return {
+        "ins_thru": 1000*ins_ns/ins_num,
+        "que_thru": 1000*que_ns/que_num
+    }
 
 metric = sys.argv[1]
 infile = sys.argv[2]
@@ -66,5 +75,11 @@ for files in infiles:
         res = basic(raw)
     elif metric == 'real_are':
         res = real_are(raw)
-    pickle.dump(res, open(os.path.join(outfile, os.path.basename(os.path.normpath(files))+'.pickle'), 'wb'))
+    elif metric == 'thru':
+        res = thru(raw)
+    
+    if outfile == '-disp':
+        print(res)
+    else:
+        pickle.dump(res, open(os.path.join(outfile, os.path.basename(os.path.normpath(files))+'.pickle'), 'wb'))
     

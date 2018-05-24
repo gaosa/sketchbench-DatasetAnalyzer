@@ -243,7 +243,7 @@ def draw_freq_cdf(dat):
     plt.savefig('result/freq_cdf.pdf')
 
 def draw_freq_real_are():
-    dat = pickle.load(open('tmpfiles/real_are.pickle', 'rb'))
+    dat = pickle.load(open('result/analyze_result/real_are.pickle', 'rb'))
     xs, ys = [], []
     for sk in sks:
         xs.append(dat[sk][0])
@@ -261,6 +261,7 @@ def draw_freq_real_are():
         'ylabel': 'Average relative error',
         'grid': 1,
         'zorder_csm': 0,
+        'title': '(1)',
         #'linestyle': '-',
         'markers': markers,
         'markersize': 4.0,
@@ -281,6 +282,7 @@ def draw_freq_real_are():
         'x_numticks': 7,
         #'alpha': 0.6,
         'zorder_csm': 0,
+        'title': '(2)',
         #'zorder_lcu': 50,
         'y_smallest': 10**-6,
         'linestyle': 'None',
@@ -295,12 +297,46 @@ def draw_freq_real_are():
         bottom=0.12,
         wspace=.6,
     )
+    #plt.show()
     plt.savefig('result/real_are.pdf')
+
+def draw_freq_zipf():
+    dat = pickle.load(open('result/analyze_result/zipf_aae.pickle', 'rb'))
+    ys = [dat[sk] for sk in sks]
+    plt.figure()
+    plt.subplot(121)
+    draw([i/10 for i in range(0, 31, 3)], ys, {
+        'labels': sks,
+        'title': '(1)',
+        'xlabel': 'Skewness of datasets',
+        'ylabel': 'Average absolute error',
+        'markers': markers,
+    })
+    dat = pickle.load(open('result/analyze_result/zipf_are.pickle', 'rb'))
+    ys = [dat[sk] for sk in sks]
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.subplot(122)
+    draw([i/10 for i in range(0, 31, 3)], ys, {
+        'labels': sks,
+        'title': '(2)',
+        'xlabel': 'Skewness of datasets',
+        'ylabel': 'Average relative error',
+        'markers': markers,
+    })
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        wspace=.6,
+    )
+    plt.show()
 
 #draw_freq_various_mem('caida')
 #draw_freq_various_k('caida')
 #draw_freq_cdf('caida')
-draw_freq_real_are()
+#draw_freq_real_are()
+draw_freq_zipf()
 # f = open(genpath('freq', 'kosarak', 'a', 4, 1<<22), 'rb')
 # print(pickle.load(f))
 # f.close()
