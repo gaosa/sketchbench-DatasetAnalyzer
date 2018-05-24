@@ -349,11 +349,62 @@ def draw_freq_zipf():
     plt.savefig('result/freq_skew.pdf')
     #plt.show()
 
+def draw_thru():
+    dat = pickle.load(open('result/analyze_result/thru.pickle', 'rb'))
+    plt.figure()
+    plt.subplot(121)
+    draw(
+        [i / (1<<23) for i in mems],
+        [dat[sk][0] for sk in sks], {
+            'labels': sks,
+            'title': '(1)',
+            'xlabel': 'Memory size (MB)',
+            'ylabel': 'Insertion throughput (Mips)',
+            'markers': markers,
+            'xmin': 0.5,
+            'xmax': 4,
+            'x_numticks': 8,
+            'ymin': 0,
+            'ymax': 15,
+            'y_numticks': 6,
+            'grid': 2,
+        }
+    )
+    plt.gca().yaxis.set_minor_locator(LinearLocator(16))
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.subplot(122)
+    draw(
+        [i / (1<<23) for i in mems],
+        [dat[sk][1] for sk in sks], {
+            'labels': sks,
+            'title': '(2)',
+            'xlabel': 'Memory size (MB)',
+            'ylabel': 'Query throughput (Mqps)',
+            'markers': markers,
+            'xmin': 0.5,
+            'xmax': 4,
+            'x_numticks': 8,
+            'ymin': 0,
+            'ymax': 6,
+            'grid': 2,
+        }
+    )
+    plt.gca().yaxis.set_minor_locator(LinearLocator(13))
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        wspace=.6,
+    )
+    plt.savefig('result/thru.pdf')
+
 #draw_freq_various_mem('caida')
 #draw_freq_various_k('caida')
 #draw_freq_cdf('caida')
 #draw_freq_real_are()
-draw_freq_zipf()
+#draw_freq_zipf()
+draw_thru()
 # f = open(genpath('freq', 'kosarak', 'a', 4, 1<<22), 'rb')
 # print(pickle.load(f))
 # f.close()
