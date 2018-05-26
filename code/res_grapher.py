@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib.ticker import LinearLocator, LogLocator, NullFormatter
+from matplotlib.ticker import LinearLocator, LogLocator, NullFormatter, AutoMinorLocator
 import pickle
 
 plt.rcParams.update({'figure.figsize': (8, 4)})
@@ -8,7 +8,7 @@ plt.rcParams.update({'savefig.dpi': 400})
 # global
 dats = ['kosarak', 'caida', 'webdocs']
 sks = ['a', 'c', 'cu', 'cm', 'cmm', 'cmm2', 'csm', 'lcu', 'sbf']
-markers = ['D', '*', 'h', 'x', 'v', '^', 's', 'o', '+']
+markers = ['D', '*', 'h', 'x', 'v', '^', 's', 'o', '+', '>']
 tasks = ['freq']
 ks = list(range(2,10))
 mems = list(range(1<<22,(1<<25)+1, 1<<22))
@@ -42,7 +42,7 @@ def draw(xs, ys, params):
     
     if params.get('x_scale', 'linear') is 'log':
         x_locator = LogLocator(base=params.get('x_log_base', 10))
-        plt.gca().set_xscale('log', basey=params.get('x_log_base', 10))
+        plt.gca().set_xscale('log', basex=params.get('x_log_base', 10))
     else:
         x_locator = LinearLocator()
 
@@ -399,12 +399,170 @@ def draw_thru():
     )
     plt.savefig('result/thru.pdf')
 
+def draw_heavychange():
+    dat = pickle.load(open('result/analyze_result/heavychange.pickle', 'rb'))
+    hs = []
+    for sk in sks:
+        if sk == 'cmm2':
+            hs.append(dat['cmmcusketch']['recall'])
+        elif sk == 'lcu':
+            hs.append(dat['Lcusketch']['recall'])
+        else:
+            hs.append(dat[sk+'sketch']['recall'])
+    
+    plt.figure()
+    plt.subplot(121)
+    plt.bar(sks, hs,
+        color='#333333',
+        edgecolor='white',
+        linewidth=.1
+    )
+    plt.gca().set_facecolor('#e5e5e5')
+    plt.xticks(rotation=30)
+    plt.subplot(122)
+    hs = []
+    for sk in sks:
+        if sk == 'cmm2':
+            hs.append(dat['cmmcusketch']['precision'])
+        elif sk == 'lcu':
+            hs.append(dat['Lcusketch']['precision'])
+        else:
+            hs.append(dat[sk+'sketch']['precision'])
+    plt.bar(sks, hs,
+        color='#333333',
+        edgecolor='white',
+        linewidth=.1
+    )
+    plt.gca().set_facecolor('#e5e5e5')
+    plt.xticks(rotation=30)
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        # wspace=.6,
+    )
+    plt.show()
+
+def draw_topk():
+    dat = pickle.load(open('result/analyze_result/topk3.pickle', 'rb'))
+    ys = {
+        'recall': [],
+        'p': [],
+        'aae': [],
+        'are': [],
+    }
+    for sk in sks:
+        ys['recall'].append(dat[sk]['recall'])
+        ys['p'].append(dat[sk]['p'])
+        ys['aae'].append(dat[sk]['aae'])
+        ys['are'].append(dat[sk]['are'])
+    ys['recall'].append(dat['ss']['recall'])
+    ys['p'].append(dat['ss']['p'])
+    ys['aae'].append(dat['ss']['aae'])
+    ys['are'].append(dat['ss']['are'])
+    plt.figure()
+    plt.subplot(121)
+    draw([1<<i for i in range(3, 13)], ys['recall'], {
+        'labels': sks+['ss'],
+        'x_scale': 'log',
+        'markers': markers,
+        'zorder_ss': 0,
+        'xmin': 8,
+        'xmax': 4096,
+        'x_log_base': 2,
+        'x_numticks': 10,
+        'ymin': 0.45,
+        'ymax': 1.02,
+        'xlabel': 'Top-K',
+        'ylabel': 'Recall',
+        'grid': 2,
+        'title': '(1)',
+    })
+    plt.gca().yaxis.set_minor_locator(AutoMinorLocator(2))
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.subplot(122)
+    draw([1<<i for i in range(3, 13)], ys['p'], {
+        'labels': sks+['ss'],
+        'x_scale': 'log',
+        'markers': markers,
+        'zorder_ss': 0,
+        'xmin': 8,
+        'xmax': 4096,
+        'x_log_base': 2,
+        'x_numticks': 10,
+        'xlabel': 'Top-K',
+        'ymin': 0.75,
+        'ymax': 1.009,
+        'ylabel': 'Rank correlation coefficient',
+        'grid': 2,
+        'title': '(2)',
+    })
+    plt.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        wspace=.6,
+    )
+    plt.savefig('result/topk1.pdf')
+    # figure 2
+    plt.figure()
+    plt.subplot(121)
+    draw([1<<i for i in range(3, 13)], ys['aae'], {
+        'labels': sks+['ss'],
+        'x_scale': 'log',
+        'markers': markers,
+        'zorder_ss': 0,
+        'xmin': 8,
+        'xmax': 4096,
+        'x_log_base': 2,
+        'x_numticks': 10,
+        'ymin': 10,
+        'ymax': 10000,
+        'y_scale': 'log',
+        'xlabel': 'Top-K',
+        'ylabel': 'Average absolute error',
+        'grid': 2,
+        'title': '(1)',
+    })
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.subplot(122)
+    draw([1<<i for i in range(3, 13)], ys['are'], {
+        'labels': sks+['ss'],
+        'x_scale': 'log',
+        'markers': markers,
+        'zorder_ss': 0,
+        'xmin': 8,
+        'xmax': 4096,
+        'x_log_base': 2,
+        'x_numticks': 10,
+        'ymin': 10**-4,
+        'ymax': 1,
+        'y_scale': 'log',
+        'xlabel': 'Top-K',
+        'ylabel': 'Average relative error',
+        'grid': 2,
+        'title': '(2)',
+    })
+    plt.subplots_adjust(
+        top=.92, 
+        left=.08, 
+        right=.98,
+        bottom=0.12,
+        wspace=.6,
+    )
+    plt.savefig('result/topk2.pdf')
+
 #draw_freq_various_mem('caida')
 #draw_freq_various_k('caida')
 #draw_freq_cdf('caida')
 #draw_freq_real_are()
 #draw_freq_zipf()
-draw_thru()
+#draw_thru()
+#draw_heavychange()
+draw_topk()
 # f = open(genpath('freq', 'kosarak', 'a', 4, 1<<22), 'rb')
 # print(pickle.load(f))
 # f.close()

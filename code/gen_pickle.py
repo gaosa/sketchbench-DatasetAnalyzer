@@ -57,6 +57,48 @@ def thru(raw):
         "que_thru": 1000*que_num/que_ns
     }
 
+def topk(raw):
+    def analyze(d):
+        d1 = d[0]
+        d2 = d[1]
+        k1 = d1.keys()
+        k2 = d2.keys()
+        k3 = k1 & k2
+        N = len(k3)
+        recall = N / len(k1)
+        p = 1-functools.reduce(lambda x,y: x+y, [(d1[k][1] - d2[k][1])**2 for k in k3]) * 6/(N*(N**2-1))
+        ae = [abs(d1[k][0] - d2[k][0]) for k in k3]
+        re = [abs(d1[k][0] - d2[k][0])/d2[k][0] for k in k3]
+        aae = functools.reduce(lambda x,y:x+y,ae)/len(ae)
+        are = functools.reduce(lambda x,y:x+y,re)/len(re)
+        return [recall, p, aae, are]
+
+    def todict(raw1, raw2):
+        d1 = dict()
+        for line in raw1:
+            d1[line[0]] = [line[1], len(d1)]
+        d2 = dict()
+        for line in raw2:
+            d2[line[0]] = [line[1], len(d2)]
+        return [d1, d2]
+    
+    res = {
+        'recall': [],
+        'p': [],
+        'aae': [],
+        'are': [],
+    }
+    raw1 = raw[:4096]
+    raw2 = raw[4097:]
+    for i in range(3, 13):
+        r = analyze(todict(raw1[:1<<i], raw2[:1<<i]))
+        res['recall'].append(r[0])
+        res['p'].append(r[1])
+        res['aae'].append(r[2])
+        res['are'].append(r[3])
+    return res
+    
+
 metric = sys.argv[1]
 infile = sys.argv[2]
 outfile = sys.argv[3]
@@ -77,6 +119,8 @@ for files in infiles:
         res = real_are(raw)
     elif metric == 'thru':
         res = thru(raw)
+    elif metric == 'topk':
+        res = topk(raw)
     
     if outfile == '-disp':
         print(res)
