@@ -400,49 +400,51 @@ def draw_thru():
     plt.savefig('result/thru.pdf')
 
 def draw_heavychange():
-    dat = pickle.load(open('result/analyze_result/heavychange.pickle', 'rb'))
-    hs = []
-    for sk in sks:
-        if sk == 'cmm2':
-            hs.append(dat['cmmcusketch']['recall'])
-        elif sk == 'lcu':
-            hs.append(dat['Lcusketch']['recall'])
-        else:
-            hs.append(dat[sk+'sketch']['recall'])
-    
+    dat = pickle.load(open('result/analyze_result/heavy.pickle', 'rb'))
+    ys = {
+        'recall': [dat[sk]['recall'] for sk in sks],
+        'precision': [dat[sk]['precision'] for sk in sks],
+    }
+    xs = list(range(1, 9))
     plt.figure()
     plt.subplot(121)
-    plt.bar(sks, hs,
-        color='#333333',
-        edgecolor='white',
-        linewidth=.1
-    )
-    plt.gca().set_facecolor('#e5e5e5')
-    plt.xticks(rotation=30)
+    draw(xs, ys['recall'], {
+        'labels': sks,
+        'xlabel': 'Memory size (4 KB)',
+        'ylabel': 'Recall',
+        'ymax': 1.0,
+        'ymin': 0.2,
+        'xmin': 1,
+        'xmax': 8,
+        'markers': markers,
+        'x_numticks': 8,
+        'grid': 2,
+        'title': '(1)',
+    })
+    plt.legend(loc='upper left', fontsize='small', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
     plt.subplot(122)
-    hs = []
-    for sk in sks:
-        if sk == 'cmm2':
-            hs.append(dat['cmmcusketch']['precision'])
-        elif sk == 'lcu':
-            hs.append(dat['Lcusketch']['precision'])
-        else:
-            hs.append(dat[sk+'sketch']['precision'])
-    plt.bar(sks, hs,
-        color='#333333',
-        edgecolor='white',
-        linewidth=.1
-    )
-    plt.gca().set_facecolor('#e5e5e5')
-    plt.xticks(rotation=30)
+    draw(xs, ys['precision'], {
+        'labels': sks,
+        'xlabel': 'Memory size (4 KB)',
+        'ylabel': 'Precision',
+        'xmin': 1,
+        'xmax': 8,
+        'ymax': 1.0,
+        'ymin': 0,
+        'markers': markers,
+        'x_numticks': 8,
+        'grid': 2,
+        'title': '(2)',
+    })
+    plt.gca().yaxis.set_minor_locator(AutoMinorLocator(2))
     plt.subplots_adjust(
         top=.92, 
         left=.08, 
         right=.98,
         bottom=0.12,
-        # wspace=.6,
+        wspace=.6,
     )
-    plt.show()
+    plt.savefig('result/analyze_result/heavy.pdf')
 
 def draw_topk():
     dat = pickle.load(open('result/analyze_result/topk3.pickle', 'rb'))
@@ -561,8 +563,8 @@ def draw_topk():
 #draw_freq_real_are()
 #draw_freq_zipf()
 #draw_thru()
-#draw_heavychange()
-draw_topk()
+draw_heavychange()
+#draw_topk()
 # f = open(genpath('freq', 'kosarak', 'a', 4, 1<<22), 'rb')
 # print(pickle.load(f))
 # f.close()

@@ -97,6 +97,12 @@ def topk(raw):
         res['aae'].append(r[2])
         res['are'].append(r[3])
     return res
+
+def heavy(raw):
+    return {
+        'recall': [r[0] for r in raw],
+        'precision': [r[1] for r in raw],
+    }
     
 
 metric = sys.argv[1]
@@ -111,8 +117,12 @@ else:
 for files in infiles:
     f = open(files, 'r')
     raw = []
-    for line in f:
-        raw.append([int(i) for i in line.split()])
+    if metric == 'heavy':
+        for line in f:
+            raw.append([float(i) for i in line.split()])
+    else:    
+        for line in f:
+            raw.append([int(i) for i in line.split()])
     if metric == 'basic':
         res = basic(raw)
     elif metric == 'real_are':
@@ -121,6 +131,8 @@ for files in infiles:
         res = thru(raw)
     elif metric == 'topk':
         res = topk(raw)
+    elif metric == 'heavy':
+        res = heavy(raw)
     
     if outfile == '-disp':
         print(res)
